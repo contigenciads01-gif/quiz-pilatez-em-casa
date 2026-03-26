@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#F5A623">
+  <title>Quiz – Pilates em Casa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F5F0EB;
+      --primary: #F5A623;
+      --primary-dark: #FF8C00;
+      --accent-red: #E84444;
+      --accent-green: #27AE60;
+      --text: #1A1A1A;
+      --text-secondary: #666666;
+      --border: #E8E0D8;
+      --card-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --radius-card: 16px;
+      --radius-btn: 50px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #app {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 480px;
+      width: 100%;
+      margin: 0 auto;
+      position: relative;
+      padding-bottom: 40px;
+    }
+
+    /* ── PROGRESS BAR ── */
+    #progress-bar-container {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding: 10px 24px 6px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .progress-segment {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #F5A623, #FF8C00);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── BACK BUTTON ── */
+    #btn-back {
+      position: absolute;
+      top: 48px;
+      left: 24px;
+      background: none;
+      border: none;
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 8px 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      z-index: 99;
+      transition: color 0.2s;
+    }
+    #btn-back:hover { color: var(--primary); }
+    #btn-back.hidden { display: none; }
+
+    /* ── STEPS ── */
+    .step {
+      display: none;
+      flex-direction: column;
+      padding: 24px;
+      padding-top: 56px;
+      opacity: 0;
+      transform: translateX(30px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+      min-height: calc(100vh - 60px);
+    }
+    .step.active {
+      display: flex;
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .step.leaving-left {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    .step.entering-right {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    .step.entering-left {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+
+    /* ── TYPOGRAPHY ── */
+    .headline {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text);
+    }
+    .question-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.35;
+      margin-bottom: 20px;
+    }
+    .sub-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    /* ── OPTION CARDS ── */
+    .options-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .options-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+    .options-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+
+    .option-card {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 14px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s, box-shadow 0.15s;
+      position: relative;
+      overflow: hidden;
+      min-height: 52px;
+      user-select: none;
+    }
+    .option-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+    .option-card.selected {
+      border-color: var(--primary);
+      background: rgba(245,166,35,0.08);
+    }
+    .option-card.selected.multi-fill {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .option-card.selected.multi-fill .option-text { color: #fff; }
+    .option-card.selected.multi-fill .option-emoji { color: #fff; }
+    .option-card.selected.multi-fill .option-checkbox { background: #fff; border-color: #fff; }
+    .option-card.selected.multi-fill .option-checkbox::after { border-color: var(--primary); }
+
+    .option-radio {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      flex-shrink: 0;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .option-card.selected .option-radio {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+    .option-card.selected .option-radio::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      width: 8px; height: 8px;
+      background: #fff;
+      border-radius: 50%;
+    }
+
+    .option-checkbox {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 5px;
+      flex-shrink: 0;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .option-card.selected .option-checkbox {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+    .option-card.selected .option-checkbox::after {
+      content: '✓';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      font-size: 12px;
+      color: #fff;
+      font-weight: 800;
+    }
+
+    .option-text {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.35;
+    }
+    .option-emoji { font-size: 18px; }
+
+    /* Age selector (step 1) full-fill orange */
+    .option-card.age-option {
+      background: var(--primary);
+      border-color: var(--primary);
+      justify-content: center;
+    }
+    .option-card.age-option .option-text { color: #fff; text-align: center; font-size: 15px; font-weight: 800; }
+    .option-card.age-option:hover { opacity: 0.9; }
+    .option-card.age-option.selected { background: var(--primary-dark); border-color: var(--primary-dark); }
+
+    /* Silhouette cards */
+    .silhouette-card {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: var(--radius-card);
+      padding: 12px 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      user-select: none;
+    }
+    .silhouette-card:hover { transform: translateY(-2px); box-shadow: var(--card-shadow); }
+    .silhouette-card.selected { border-color: var(--primary); background: rgba(245,166,35,0.08); }
+    .silhouette-label { font-size: 12px; font-weight: 700; color: var(--text); text-align: center; line-height: 1.3; }
+
+    .silhouette-svg { width: 60px; height: 100px; }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-btn);
+      padding: 18px 32px;
+      font-size: 16px;
+      font-weight: 800;
+      font-family: 'Nunito', sans-serif;
+      width: 100%;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,166,35,0.4); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .btn-primary.btn-red { background: var(--accent-red); }
+    .btn-primary.btn-green { background: var(--accent-green); }
+    .btn-primary.btn-large { font-size: 18px; padding: 20px 32px; }
+
+    /* ── BEFORE/AFTER PLACEHOLDER ── */
+    .before-after {
+      display: flex;
+      width: 100%;
+      height: 240px;
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: var(--card-shadow);
+    }
+    .before-half, .after-half {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+    }
+    .before-half { background: #c8b8a8; color: #5a4a3a; }
+    .after-half { background: #8bc4a0; color: #1a4a2e; }
+    .before-after-label { font-size: 11px; font-weight: 600; opacity: 0.7; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── INFO BOX ── */
+    .info-box {
+      background: #e8f4fd;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a5276;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .info-box-green {
+      background: #eafaf1;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent-green);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-orange {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 16px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── LOADING SCREEN ── */
+    .loading-screen { display: flex; flex-direction: column; gap: 14px; padding-top: 20px; }
+    .loading-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .loading-percent { font-size: 16px; font-weight: 800; color: var(--primary); }
+    .loading-bar-track {
+      height: 14px;
+      background: var(--border);
+      border-radius: 7px;
+      overflow: hidden;
+      position: relative;
+    }
+    .loading-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #F5A623, #FF8C00);
+      border-radius: 7px;
+      transition: width 0.1s linear;
+      position: relative;
+      overflow: hidden;
+    }
+    .loading-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+      animation: shimmer 1.2s infinite;
+    }
+    @keyframes shimmer { to { left: 200%; } }
+
+    .loading-subtitle {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-red);
+      text-align: center;
+      min-height: 20px;
+    }
+
+    /* ── SLIDER ── */
+    .slider-container { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 24px; }
+    .slider-value-display {
+      font-size: 56px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+    }
+    .slider-unit { font-size: 24px; font-weight: 700; color: var(--text-secondary); }
+    .slider-track-wrap { width: 100%; position: relative; padding: 0 4px; }
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    input[type=range].custom-range {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range].custom-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(245,166,35,0.5);
+      border: 3px solid #fff;
+    }
+    input[type=range].custom-range::-moz-range-thumb {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(245,166,35,0.5);
+      border: 3px solid #fff;
+    }
+    .slider-pointer {
+      width: 0; height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 10px solid var(--primary);
+      position: absolute;
+      top: -14px;
+      transition: left 0.1s;
+      transform: translateX(-50%);
+    }
+    .slider-hint { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+
+    .unit-toggle {
+      display: flex;
+      gap: 0;
+      background: var(--border);
+      border-radius: 50px;
+      padding: 3px;
+      margin-bottom: 8px;
+    }
+    .unit-btn {
+      padding: 6px 20px;
+      border-radius: 50px;
+      border: none;
+      background: none;
+      font-family: 'Nunito', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      color: var(--text-secondary);
+    }
+    .unit-btn.active { background: var(--primary); color: #fff; }
+
+    /* ── STEP 1 ── */
+    .step1-header {
+      background: var(--primary);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+    }
+
+    /* ── TESTIMONIAL CARD ── */
+    .testimonial-card {
+      background: #fff;
+      border-radius: var(--radius-card);
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 16px;
+    }
+    .testimonial-stars { color: #F5A623; font-size: 14px; margin-bottom: 4px; }
+    .testimonial-name { font-size: 15px; font-weight: 800; color: var(--text); }
+    .testimonial-role { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+    .testimonial-text { font-size: 13px; color: var(--text); line-height: 1.55; }
+    .testimonial-avatar {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c8b8a8, #a8907a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    /* ── RESULT SCREEN ── */
+    .badge-result {
+      background: #fde8e8;
+      border: 1.5px solid var(--accent-red);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .badge-result .warning { font-size: 22px; margin-bottom: 4px; }
+    .badge-result .cause-label { font-size: 13px; font-weight: 700; color: var(--accent-red); }
+    .badge-result .cause-title { font-size: 22px; font-weight: 800; color: var(--accent-red); margin-top: 2px; }
+
+    .metric-block {
+      background: #fff;
+      border-radius: var(--radius-card);
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 16px;
+    }
+    .metric-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 12px; line-height: 1.4; }
+
+    .gradient-bar-wrap { position: relative; margin-bottom: 8px; }
+    .gradient-bar {
+      height: 16px;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #2ecc71, #f1c40f, #e67e22, #e74c3c);
+    }
+    .gradient-bar-pointer {
+      position: absolute;
+      top: -22px;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .gradient-bar-pointer::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid var(--text);
+    }
+    .gradient-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* SVG Chart */
+    .chart-container { width: 100%; }
+
+    .cta-green-box {
+      background: #eafaf1;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a5c34;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .cta-green-box u { color: var(--accent-green); }
+
+    .cta-orange-text {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* ── BEFORE/AFTER CAROUSEL ── */
+    .carousel-wrap { position: relative; overflow: hidden; border-radius: var(--radius-card); margin-bottom: 12px; }
+    .carousel-track { display: flex; transition: transform 0.4s ease; }
+    .carousel-slide { min-width: 100%; position: relative; }
+    .carousel-badge {
+      position: absolute;
+      bottom: 12px; left: 50%;
+      transform: translateX(-50%);
+      background: #F5A623;
+      color: #fff;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .carousel-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 20px; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .dot.active { background: var(--primary); }
+
+    /* ── RESULT SLIDER ── */
+    .result-slider-wrap {
+      background: #fff;
+      border-radius: var(--radius-card);
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+      margin-bottom: 20px;
+    }
+    .rs-label { font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-bottom: 14px; }
+    .rs-track {
+      position: relative;
+      height: 8px;
+      background: linear-gradient(90deg, #2ecc71, #F5A623, #FF8C00);
+      border-radius: 4px;
+      margin-bottom: 24px;
+    }
+    .rs-thumb {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 22px; height: 22px;
+      background: var(--primary);
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 2px 8px rgba(245,166,35,0.5);
+    }
+    .rs-badge {
+      position: absolute;
+      top: -32px;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .rs-badge::after {
+      content: '';
+      position: absolute;
+      top: 100%; left: 50%;
+      transform: translateX(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 4px solid var(--text);
+    }
+    .rs-ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    /* ── VIDEO PLACEHOLDER ── */
+    .video-placeholder {
+      width: 100%;
+      min-height: 300px;
+      background: #1A1A1A;
+      border-radius: var(--radius-card);
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(39,174,96,0.55);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .video-overlay-text { font-size: 18px; font-weight: 800; color: #fff; text-align: center; padding: 0 20px; }
+    .video-sound-icon { font-size: 32px; }
+    .video-click-hint { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.85); }
+    .video-bottom-text {
+      position: absolute;
+      bottom: 12px; left: 12px;
+      font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 600;
+    }
+
+    /* ── STEP 13 CHART ── */
+    svg.hormone-chart { width: 100%; height: 160px; overflow: visible; }
+
+    /* ── LOADING DEPOIMENTO ── */
+    .depo-loading-card {
+      background: #fff;
+      border-radius: var(--radius-card);
+      padding: 16px;
+      box-shadow: var(--card-shadow);
+      margin-top: 16px;
+      transition: opacity 0.4s;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 16px 24px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── RIPPLE ── */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(245,166,35,0.3);
+      transform: scale(0);
+      animation: ripple-anim 0.5s linear;
+      pointer-events: none;
+    }
+    @keyframes ripple-anim { to { transform: scale(4); opacity: 0; } }
+
+    /* ── BADGE GREEN RESULT ── */
+    .badge-green-result {
+      background: #eafaf1;
+      border: 1.5px solid var(--accent-green);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a5c34;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .question-hint { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 14px; }
+
+    .separator { height: 1px; background: var(--border); margin: 16px 0; }
+
+    .profile-ba {
+      display: flex;
+      gap: 8px;
+      height: 200px;
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .profile-ba .before-p { flex: 1; background: #c8b8a8; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #5a4a3a; font-weight: 800; font-size: 13px; gap: 4px; }
+    .profile-ba .after-p  { flex: 1; background: #8bc4a0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #1a4a2e; font-weight: 800; font-size: 13px; gap: 4px; }
+    .profile-ba-label { font-size: 10px; font-weight: 600; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+
+    @media (max-width: 380px) {
+      .step { padding: 20px 16px; padding-top: 52px; }
+      .headline { font-size: 22px; }
+      .question-title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- PROGRESS BAR -->
+  <div id="progress-bar-container">
+    <div class="progress-segment" id="seg1"><div class="progress-fill" id="fill1"></div></div>
+    <div class="progress-segment" id="seg2"><div class="progress-fill" id="fill2"></div></div>
+  </div>
+
+  <button id="btn-back">← Voltar</button>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 1 — LANDING / ENTRADA
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="1">
+    <h1 class="headline" style="margin-bottom:10px;">ELIMINE A BARRIGA DA MENOPAUSA E TONIFIQUE OS MÚSCULOS</h1>
+    <div class="step1-header">COM APENAS 10 MINUTOS POR DIA DE PILATES EM CASA</div>
+    <div class="before-after" style="height:200px; margin-bottom:16px;">
+      <div class="before-half">
+        <span class="before-after-label">Antes</span>
+        <span style="font-size:32px;">😔</span>
+      </div>
+      <div class="after-half">
+        <span class="before-after-label">Depois</span>
+        <span style="font-size:32px;">😍</span>
+      </div>
+    </div>
+    <p style="font-size:15px; font-weight:700; margin-bottom:6px;">Desafio específico para sua idade e objetivo:</p>
+    <p class="sub-label">Escolha uma opção abaixo:</p>
+    <div class="options-grid-2">
+      <div class="option-card age-option" data-value="30-40"><span class="option-text">30-40 anos</span></div>
+      <div class="option-card age-option" data-value="41-50"><span class="option-text">41-50 anos</span></div>
+      <div class="option-card age-option" data-value="51-60"><span class="option-text">51-60 anos</span></div>
+      <div class="option-card age-option" data-value="61-70"><span class="option-text">61-70 anos</span></div>
+    </div>
+    <div class="info-box">Faça esse teste para ter um protocolo específico para seu caso. Ao final você ganha seu diagnóstico grátis.</div>
+    <div class="info-box-green">✅ TEMPO ESTIMADO: 49 SEGUNDOS</div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 2 — METABOLISMO
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="2">
+    <p class="question-title">Como é seu metabolismo?</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="lento">
+        <span class="option-emoji">🐢</span>
+        <div class="option-radio"></div>
+        <span class="option-text">Lento – Difícil para perder e fácil para ganhar peso</span>
+      </div>
+      <div class="option-card single" data-value="acelerado">
+        <span class="option-emoji">🔥</span>
+        <div class="option-radio"></div>
+        <span class="option-text">Acelerado – Fácil de perder e difícil para ganhar peso</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 3 — QUILOS A ELIMINAR
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="3">
+    <p class="question-title">Quantos quilos você gostaria de eliminar?</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="0-5"><div class="option-radio"></div><span class="option-text">0-5 kg</span></div>
+      <div class="option-card single" data-value="6-10"><div class="option-radio"></div><span class="option-text">6-10 kg</span></div>
+      <div class="option-card single" data-value="11-15"><div class="option-radio"></div><span class="option-text">11-15 kg</span></div>
+      <div class="option-card single" data-value="16-20"><div class="option-radio"></div><span class="option-text">16-20 kg</span></div>
+      <div class="option-card single" data-value="21+"><div class="option-radio"></div><span class="option-text">Mais de 21 kg</span></div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 4 — CORPO ATUAL
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="4">
+    <p class="question-title">Como você classifica seu corpo hoje?</p>
+    <div class="options-grid-2" id="body-current-grid">
+      <div class="silhouette-card" data-value="muito-acima">
+        <svg class="silhouette-svg" viewBox="0 0 60 100"><ellipse cx="30" cy="18" rx="12" ry="12" fill="#666"/><ellipse cx="30" cy="60" rx="22" ry="32" fill="#666"/><rect x="10" y="75" width="14" height="22" rx="4" fill="#555"/><rect x="36" y="75" width="14" height="22" rx="4" fill="#555"/></svg>
+        <span class="silhouette-label">Muito acima<br>do peso</span>
+      </div>
+      <div class="silhouette-card" data-value="pouco-acima">
+        <svg class="silhouette-svg" viewBox="0 0 60 100"><ellipse cx="30" cy="16" rx="11" ry="11" fill="#666"/><ellipse cx="30" cy="55" rx="17" ry="30" fill="#666"/><rect x="14" y="73" width="12" height="24" rx="4" fill="#555"/><rect x="34" y="73" width="12" height="24" rx="4" fill="#555"/></svg>
+        <span class="silhouette-label">Um pouco<br>acima do peso</span>
+      </div>
+      <div class="silhouette-card" data-value="falsa-magra">
+        <svg class="silhouette-svg" viewBox="0 0 60 100"><ellipse cx="30" cy="15" rx="10" ry="10" fill="#666"/><ellipse cx="30" cy="53" rx="14" ry="28" fill="#666"/><rect x="16" y="70" width="11" height="26" rx="4" fill="#555"/><rect x="33" y="70" width="11" height="26" rx="4" fill="#555"/></svg>
+        <span class="silhouette-label">Falsa magra</span>
+      </div>
+      <div class="silhouette-card" data-value="magra">
+        <svg class="silhouette-svg" viewBox="0 0 60 100"><ellipse cx="30" cy="14" rx="9" ry="9" fill="#666"/><ellipse cx="30" cy="50" rx="11" ry="26" fill="#666"/><rect x="18" y="68" width="10" height="28" rx="4" fill="#555"/><rect x="32" y="68" width="10" height="28" rx="4" fill="#555"/></svg>
+        <span class="silhouette-label">Magra</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 5 — CORPO DESEJADO
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="5">
+    <p class="question-title">Qual é o corpo que você gostaria de ter?</p>
+    <div class="options-grid-3" id="body-desired-grid">
+      <div class="silhouette-card" data-value="bem-magro">
+        <svg class="silhouette-svg" viewBox="0 0 60 100"><ellipse cx="30" cy="14" rx="8" ry="8" fill="#F5A623"/><ellipse cx="30" cy="50" rx="9" ry="25" fill="#F5A623"/><rect x="19" y="68" width="9" height="28" rx="4" fill="#e8960f"/><rect x="32" y="68" width="9" height="28" rx="4" fill="#e8960f"/></svg>
+        <span class="silhouette-label">Bem<br>magro</span>
+      </div>
+      <div class="silhouette-card" data-value="pouco-magra">
+        <svg class="silhouette-svg" viewBox="0 0 60 100"><ellipse cx="30" cy="14" rx="9" ry="9" fill="#F5A623"/><ellipse cx="30" cy="51" rx="12" ry="27" fill="#F5A623"/><rect x="17" y="69" width="10" height="27" rx="4" fill="#e8960f"/><rect x="33" y="69" width="10" height="27" rx="4" fill="#e8960f"/></svg>
+        <span class="silhouette-label">Um pouco<br>mais magra</span>
+      </div>
+      <div class="silhouette-card" data-value="definida">
+        <svg class="silhouette-svg" viewBox="0 0 60 100"><ellipse cx="30" cy="14" rx="9" ry="9" fill="#F5A623"/><path d="M18,35 Q22,28 30,28 Q38,28 42,35 L44,65 Q40,72 30,72 Q20,72 16,65 Z" fill="#F5A623"/><rect x="18" y="69" width="10" height="27" rx="4" fill="#e8960f"/><rect x="32" y="69" width="10" height="27" rx="4" fill="#e8960f"/></svg>
+        <span class="silhouette-label">Definido</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 6 — OBJETIVOS ADICIONAIS
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="6">
+    <p class="question-title">Além de emagrecer, quais são seus outros objetivos?</p>
+    <p class="question-hint">Pode marcar vários:</p>
+    <div class="options-list multi-group">
+      <div class="option-card multi multi-fill" data-value="barriga"><div class="option-checkbox"></div><span class="option-text">Perder barriga/gordura localizada</span></div>
+      <div class="option-card multi multi-fill" data-value="flacidez"><div class="option-checkbox"></div><span class="option-text">Melhorar flacidez</span></div>
+      <div class="option-card multi multi-fill" data-value="dores"><div class="option-checkbox"></div><span class="option-text">Melhorar dores</span></div>
+      <div class="option-card multi multi-fill" data-value="energia"><div class="option-checkbox"></div><span class="option-text">Mais disposição e energia</span></div>
+      <div class="option-card multi multi-fill" data-value="saude"><div class="option-checkbox"></div><span class="option-text">Melhorar a saúde</span></div>
+    </div>
+    <button class="btn-primary" data-next="7" id="btn-step6">Continuar</button>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 7 — IMPACTO NA VIDA
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="7">
+    <p class="question-title">Como o seu peso tem impactado a sua vida?</p>
+    <p class="question-hint">Pode escolher várias opções:</p>
+    <div class="options-list multi-group">
+      <div class="option-card multi multi-fill" data-value="autoestima"><div class="option-checkbox"></div><span class="option-text">Minha autoestima e confiança estão baixas</span><span class="option-emoji">😔</span></div>
+      <div class="option-card multi multi-fill" data-value="cansaco"><div class="option-checkbox"></div><span class="option-text">Me sinto cansada e com pouca disposição</span><span class="option-emoji">😴</span></div>
+      <div class="option-card multi multi-fill" data-value="saude"><div class="option-checkbox"></div><span class="option-text">Tenho problemas de saúde: Dores, pressão, exames alterados, etc...</span><span class="option-emoji">🤕</span></div>
+      <div class="option-card multi multi-fill" data-value="invisivel"><div class="option-checkbox"></div><span class="option-text">Me sinto invisível e pouco atraente</span><span class="option-emoji">👎</span></div>
+    </div>
+    <button class="btn-primary" data-next="8" id="btn-step7">Continuar</button>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 8 — MOTIVACIONAL (INTERSTITIAL)
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="8">
+    <p class="headline" style="margin-bottom:12px; font-size:22px;">Sua meta é super possível de alcançar, em menos tempo que você imagina.</p>
+    <p style="font-size:14px; font-weight:700; color: var(--primary); text-decoration:underline; margin-bottom:12px;">Olha esse exemplo real:</p>
+    <div class="profile-ba" style="margin-bottom:14px;">
+      <div class="before-p"><span class="profile-ba-label">Antes</span><span style="font-size:28px;">😔</span><span>Valquíria</span></div>
+      <div class="after-p"><span class="profile-ba-label">Depois</span><span style="font-size:28px;">😍</span><span>-9kg</span></div>
+    </div>
+    <div class="testimonial-card">
+      <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+      <div class="testimonial-name">Valquíria Freitas</div>
+      <div class="testimonial-role">Dona de loja</div>
+      <p class="testimonial-text">"A menopausa acabou com meu corpo e minha energia. O desafio de pilates em casa fez eu voltar a me amar, <strong>eliminei 9kg em 8 semanas.</strong>"</p>
+    </div>
+    <button class="btn-primary" data-next="9">CONTINUAR TESTE GRATUITO</button>
+    <p style="font-size:13px; font-weight:700; color: var(--accent-red); text-align:center; margin-top:12px;">Na próxima etapa você irá descobrir o que está travando seus resultados</p>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 9 — RESPOSTA AO EXERCÍCIO
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="9">
+    <p class="question-title">Percebe que seu corpo não responde mesmo fazendo exercícios, dietas ou outras estratégias de emagrecimento?</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="nao-responde">
+        <span class="option-emoji">😵</span>
+        <div class="option-radio"></div>
+        <span class="option-text">Sim, meu corpo não responde</span>
+      </div>
+      <div class="option-card single" data-value="responde-lento">
+        <span class="option-emoji">😍</span>
+        <div class="option-radio"></div>
+        <span class="option-text">Mais ou menos, responde bem lento</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 10 — GORDURA NA BARRIGA
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="10">
+    <p class="question-title">Você acumula gordura na barriga com facilidade? A famosa barriga da menopausa</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="barriga-principal">
+        <div class="option-radio"></div>
+        <span class="option-text">Sim, é o principal lugar</span>
+        <span class="option-emoji">😤</span>
+      </div>
+      <div class="option-card single" data-value="outros-locais">
+        <div class="option-radio"></div>
+        <span class="option-text">Acumulo mais em outros locais</span>
+        <span class="option-emoji">😩</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 11 — SINTOMAS DA MENOPAUSA
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="11">
+    <p class="question-title">Quais desses sintomas da menopausa você sente?</p>
+    <p class="question-hint">Pode escolher várias opções:</p>
+    <div class="options-list multi-group">
+      <div class="option-card multi multi-fill" data-value="caloroes"><div class="option-checkbox"></div><span class="option-text">Calorão</span><span class="option-emoji">🔥</span></div>
+      <div class="option-card multi multi-fill" data-value="cansaco"><div class="option-checkbox"></div><span class="option-text">Cansaço e falta de energia</span><span class="option-emoji">😴</span></div>
+      <div class="option-card multi multi-fill" data-value="dores"><div class="option-checkbox"></div><span class="option-text">Dores no corpo</span><span class="option-emoji">🤕</span></div>
+      <div class="option-card multi multi-fill" data-value="humor"><div class="option-checkbox"></div><span class="option-text">Irritabilidade/alteração do humor</span><span class="option-emoji">😡</span></div>
+      <div class="option-card multi multi-fill" data-value="ansiedade"><div class="option-checkbox"></div><span class="option-text">Ansiedade</span><span class="option-emoji">😤</span></div>
+    </div>
+    <button class="btn-primary" data-next="12" id="btn-step11">Continuar</button>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 12 — LOADING 1 (CAUSA RAIZ)
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="12" data-loading="true" data-next="13">
+    <div class="loading-screen">
+      <div class="loading-header">
+        <span>Analisando suas respostas</span>
+        <span class="loading-percent" id="pct12">0%</span>
+      </div>
+      <div class="loading-bar-track"><div class="loading-bar-fill" id="bar12"></div></div>
+      <p class="loading-subtitle" id="sub12">Identificando a causa raiz do problema</p>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 13 — RESULTADO CAUSA RAIZ
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="13">
+    <div class="badge-result">
+      <div class="warning">⚠️ CAUSA RAIZ IDENTIFICADA ⚠️</div>
+      <div class="cause-label">SEU PROBLEMA É:</div>
+      <div class="cause-title">BAIXA HORMONAL</div>
+    </div>
+    <p class="question-title" style="font-size:17px; margin-bottom:16px;">Veja seu estado atual:</p>
+
+    <div class="metric-block">
+      <p class="metric-title">1 – Seu metabolismo está trabalhando em apenas <strong>27%</strong> da sua capacidade:</p>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">Resultado:</span>
+        <span style="font-size:20px; font-weight:800; color:var(--accent-red);">27%</span>
+      </div>
+      <p style="font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:10px;">Queima de gordura</p>
+      <div class="gradient-bar-wrap" style="margin-top:28px; margin-bottom:14px;">
+        <div class="gradient-bar-pointer" style="left:27%;">Você está aqui</div>
+        <div class="gradient-bar"></div>
+      </div>
+      <div class="gradient-bar-labels"><span>Lento</span><span>Acelerado</span></div>
+    </div>
+
+    <div class="metric-block">
+      <p class="metric-title">2 – Seus hormônios estão em baixa, aproximadamente apenas <strong>32%</strong> da produção máxima.</p>
+      <svg class="hormone-chart" viewBox="0 0 300 150">
+        <defs>
+          <linearGradient id="chartGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#e74c3c"/>
+            <stop offset="50%" style="stop-color:#f1c40f"/>
+            <stop offset="100%" style="stop-color:#2ecc71"/>
+          </linearGradient>
+        </defs>
+        <!-- Area -->
+        <polygon points="20,20 280,115 280,140 20,140" fill="url(#chartGrad)" opacity="0.25"/>
+        <!-- Line -->
+        <line x1="20" y1="20" x2="280" y2="115" stroke="url(#chartGrad)" stroke-width="3"/>
+        <!-- Left dot -->
+        <circle cx="20" cy="20" r="7" fill="#e74c3c"/>
+        <!-- Right dot -->
+        <circle cx="280" cy="115" r="7" fill="#2ecc71"/>
+        <!-- Left badge -->
+        <rect x="0" y="2" width="84" height="22" rx="5" fill="#fde8e8"/>
+        <text x="42" y="16" text-anchor="middle" font-size="10" font-weight="700" fill="#c0392b" font-family="Nunito,sans-serif">Mínimo ideal</text>
+        <!-- Right badge -->
+        <rect x="234" y="97" width="52" height="22" rx="5" fill="#eafaf1"/>
+        <text x="260" y="111" text-anchor="middle" font-size="10" font-weight="700" fill="#27AE60" font-family="Nunito,sans-serif">Você</text>
+        <!-- Axis labels -->
+        <text x="20" y="148" text-anchor="start" font-size="11" font-weight="700" fill="#666" font-family="Nunito,sans-serif">Alta hormonal</text>
+        <text x="280" y="148" text-anchor="end" font-size="11" font-weight="700" fill="#666" font-family="Nunito,sans-serif">Baixa hormonal</text>
+      </svg>
+    </div>
+
+    <div class="cta-green-box">
+      Mas isso tem solução, você precisa ativar a <u>REPOSIÇÃO HORMONAL NATURAL</u>
+    </div>
+    <p class="cta-orange-text">AGORA É HORA DE PERSONALIZAR A SOLUÇÃO PARA VOCÊ 👇</p>
+    <button class="btn-primary" data-next="14">CONTINUAR PARA SOLUÇÃO</button>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 14 — LOADING 2 (SOLUÇÃO)
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="14" data-loading="true" data-next="15">
+    <div class="loading-screen">
+      <div class="loading-header">
+        <span>Analisando suas respostas</span>
+        <span class="loading-percent" id="pct14">0%</span>
+      </div>
+      <div class="loading-bar-track"><div class="loading-bar-fill" id="bar14"></div></div>
+      <p class="loading-subtitle" id="sub14">Identificando a solução para seu caso</p>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 15 — ALTURA
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="15">
+    <p class="question-title">Qual é a sua altura?</p>
+    <div class="slider-container">
+      <div class="unit-toggle">
+        <button class="unit-btn active" id="unit-cm">cm</button>
+        <button class="unit-btn" id="unit-pol">pol</button>
+      </div>
+      <div class="slider-value-display" id="altura-display">165<span class="slider-unit">cm</span></div>
+      <div class="slider-track-wrap" style="width:100%;">
+        <div class="slider-labels"><span>140</span><span>165</span><span>200</span></div>
+        <div style="position:relative;">
+          <input type="range" class="custom-range" id="slider-altura" min="140" max="200" value="165" step="1">
+        </div>
+      </div>
+      <p class="slider-hint">Arraste para ajustar</p>
+    </div>
+    <button class="btn-primary" data-next="16">Continuar teste gratuito</button>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 16 — PESO
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="16">
+    <p class="question-title">Qual é seu peso atual?</p>
+    <div class="slider-container">
+      <div class="unit-toggle">
+        <button class="unit-btn active" id="unit-kg">kg</button>
+        <button class="unit-btn" id="unit-lb">lb</button>
+      </div>
+      <div class="slider-value-display" id="peso-display">70<span class="slider-unit">kg</span></div>
+      <div class="slider-track-wrap" style="width:100%;">
+        <div class="slider-labels"><span>40</span><span>70</span><span>150</span></div>
+        <div style="position:relative;">
+          <input type="range" class="custom-range" id="slider-peso" min="40" max="150" value="70" step="1">
+        </div>
+      </div>
+      <p class="slider-hint">Arraste para ajustar</p>
+    </div>
+    <button class="btn-primary" data-next="17">Continuar teste gratuito</button>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 17 — DIA A DIA
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="17">
+    <p class="question-title">Como é seu dia a dia?</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="fora">
+        <div class="option-radio"></div>
+        <span class="option-text">Trabalho fora e tenho uma rotina corrida</span>
+        <span class="option-emoji">🚗</span>
+      </div>
+      <div class="option-card single" data-value="casa-flex">
+        <div class="option-radio"></div>
+        <span class="option-text">Trabalho em casa e tenho uma rotina flexível</span>
+        <span class="option-emoji">🏠</span>
+      </div>
+      <div class="option-card single" data-value="nao-trabalha">
+        <div class="option-radio"></div>
+        <span class="option-text">Atualmente não trabalho</span>
+        <span class="option-emoji">😊</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 18 — FREQUÊNCIA DE EXERCÍCIOS
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="18">
+    <p class="question-title">Quantas vezes por semana você faz/pretende fazer exercícios?</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="1-2x"><div class="option-radio"></div><span class="option-text">1-2x na semana</span></div>
+      <div class="option-card single" data-value="3-4x"><div class="option-radio"></div><span class="option-text">3-4x na semana</span></div>
+      <div class="option-card single" data-value="5x+"><div class="option-radio"></div><span class="option-text">5x ou mais na semana</span></div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 19 — HÁBITOS ALIMENTARES
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="19">
+    <p class="question-title">Como são seus hábitos alimentares atualmente?</p>
+    <p class="question-hint">Pode escolher várias opções:</p>
+    <div class="options-list multi-group">
+      <div class="option-card multi multi-fill" data-value="doces"><div class="option-checkbox"></div><span class="option-text">Amo comer doces</span><span class="option-emoji">🍫</span></div>
+      <div class="option-card multi multi-fill" data-value="pratico"><div class="option-checkbox"></div><span class="option-text">Prefiro praticidade e coisas do dia a dia</span><span class="option-emoji">✅</span></div>
+      <div class="option-card multi multi-fill" data-value="saudavel"><div class="option-checkbox"></div><span class="option-text">Tenho uma alimentação saudável</span><span class="option-emoji">🥗</span></div>
+      <div class="option-card multi multi-fill" data-value="refri"><div class="option-checkbox"></div><span class="option-text">Bebo refrigerantes</span><span class="option-emoji">🥤</span></div>
+      <div class="option-card multi multi-fill" data-value="fritura"><div class="option-checkbox"></div><span class="option-text">Gosto de frituras e coisas salgadas</span><span class="option-emoji">🍟</span></div>
+      <div class="option-card multi multi-fill" data-value="alcool"><div class="option-checkbox"></div><span class="option-text">Consumo bebidas alcoólicas</span><span class="option-emoji">🍺</span></div>
+    </div>
+    <button class="btn-primary" data-next="20" id="btn-step19">Continuar</button>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 20 — BENEFÍCIOS DESEJADOS
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="20">
+    <p class="question-title">Quais benefícios você quer ter ao emagrecer?</p>
+    <p class="question-hint">Pode escolher várias opções:</p>
+    <div class="options-list multi-group">
+      <div class="option-card multi multi-fill" data-value="bonita"><div class="option-checkbox"></div><span class="option-text">Me sentir mais bonita e atraente</span><span class="option-emoji">👙</span></div>
+      <div class="option-card multi multi-fill" data-value="roupa"><div class="option-checkbox"></div><span class="option-text">Poder colocar uma roupa e ela vestir bem</span><span class="option-emoji">👗</span></div>
+      <div class="option-card multi multi-fill" data-value="espelho"><div class="option-checkbox"></div><span class="option-text">Olhar no espelho e se sentir bem comigo</span><span class="option-emoji">🪞</span></div>
+      <div class="option-card multi multi-fill" data-value="elogios"><div class="option-checkbox"></div><span class="option-text">Receber elogios das pessoas próximas</span><span class="option-emoji">🍑</span></div>
+      <div class="option-card multi multi-fill" data-value="energia"><div class="option-checkbox"></div><span class="option-text">Ter energia e disposição</span><span class="option-emoji">🏃</span></div>
+    </div>
+    <button class="btn-primary" data-next="21" id="btn-step20">Continuar</button>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 21 — MEDO DO FUTURO
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="21">
+    <p class="question-title">Se nada mudar, como será sua vida daqui um tempo?</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="mais-gorda"><div class="option-radio"></div><span class="option-text">Vou estar mais gorda e feia</span><span class="option-emoji">😞</span></div>
+      <div class="option-card single" data-value="saude-piora"><div class="option-radio"></div><span class="option-text">Minha saúde vai piorar muito</span><span class="option-emoji">😫</span></div>
+      <div class="option-card single" data-value="sem-roupa"><div class="option-radio"></div><span class="option-text">Nenhuma roupa vai vestir bem</span><span class="option-emoji">👕</span></div>
+      <div class="option-card single" data-value="mal"><div class="option-radio"></div><span class="option-text">Vou me sentir muito mal</span><span class="option-emoji">🎭</span></div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 22 — PROTOCOLO DE TREINO
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="22">
+    <p class="question-title">Você acredita que um protocolo com treinos fáceis de 10 minutos, sem impacto e no conforto da sua casa, te ajudaria?</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="sim-exato">
+        <div class="option-radio"></div>
+        <span class="option-text">Sim, é exatamente o que eu preciso</span>
+        <span class="option-emoji">😍</span>
+      </div>
+      <div class="option-card single" data-value="vale-teste">
+        <div class="option-radio"></div>
+        <span class="option-text">Vale o teste</span>
+        <span class="option-emoji">💪</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 23 — COMPROMETIMENTO
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="23">
+    <p class="question-title">Você está disposta a dedicar 10 minutos por dia nas próximas semanas para mudar sua realidade?</p>
+    <div class="options-list">
+      <div class="option-card single" data-value="sim-preciso">
+        <div class="option-radio"></div>
+        <span class="option-text">Sim, preciso mudar</span>
+        <span class="option-emoji">🤩</span>
+      </div>
+      <div class="option-card single" data-value="tentar">
+        <div class="option-radio"></div>
+        <span class="option-text">Estou disposta a pelo menos tentar</span>
+        <span class="option-emoji">🙏</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 24 — LOADING FINAL
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="24" data-loading="true" data-next="25">
+    <div class="loading-screen">
+      <div class="loading-header">
+        <span>Analisando suas respostas</span>
+        <span class="loading-percent" id="pct24">0%</span>
+      </div>
+      <div class="loading-bar-track"><div class="loading-bar-fill" id="bar24"></div></div>
+      <p class="loading-subtitle" id="sub24" style="color:var(--accent-red); font-size:15px; font-weight:800;">PREPARANDO SEU PROTOCOLO</p>
+      <div class="depo-loading-card" id="depo24">
+        <div class="testimonial-avatar">👩</div>
+        <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
+        <div class="testimonial-name" id="depo24-name">Lucia Ribeiro</div>
+        <div class="testimonial-role" id="depo24-role">Atendente em loja</div>
+        <p class="testimonial-text" id="depo24-text">"Desde que comecei estou eliminando uma média de 1kg por semana, totalizando 10,5kg."</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 25 — VÍDEO (PRÉ-RESULTADO)
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="25">
+    <p class="headline" style="font-size:20px; text-align:center; margin-bottom:10px;">ASSISTA ESSE VÍDEO RÁPIDO PARA LIBERAR SEU PROTOCOLO</p>
+    <div class="badge-orange" style="margin-bottom:14px;">E ELIMINE 1KG POR SEMANA COM PILATES EM CASA</div>
+    <div class="video-placeholder" id="video-placeholder">
+      <div class="video-overlay">
+        <p class="video-overlay-text">Seu protocolo foi liberado</p>
+        <div class="video-sound-icon">🔇</div>
+        <p class="video-click-hint">Clique para ouvir</p>
+      </div>
+      <div class="video-bottom-text">que equilibrar seus hormônios</div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       ETAPA 26 — RESULTADO FINAL
+  ════════════════════════════════════════ -->
+  <section class="step" data-step="26">
+    <div class="badge-green-result">
+      🎉 PARABÉNS, SEU TESTE IDENTIFICOU UM BOM POTENCIAL DE EMAGRECIMENTO
+    </div>
+    <p style="font-size:15px; font-weight:700; color:var(--text); margin-bottom:20px; line-height:1.55;">
+      Com base nas suas respostas <span style="color:var(--accent-red); font-weight:800;">você pode eliminar 1 kg por semana,</span> após ativar a reposição natural hormonal.
+    </p>
+
+    <div class="result-slider-wrap">
+      <p class="rs-label">Sua estimativa de emagrecimento</p>
+      <div class="rs-track">
+        <div class="rs-thumb" style="left:62%;">
+          <div class="rs-badge">Você está aqui</div>
+        </div>
+      </div>
+      <div class="rs-ticks">
+        <span>0,5kg/sem</span>
+        <span>1kg/sem</span>
+        <span>1,5kg/sem</span>
+      </div>
+    </div>
+
+    <p class="question-title" style="font-size:17px; margin-bottom:12px;">Veja você mesmo resultados reais 👇</p>
+
+    <div class="carousel-wrap">
+      <div class="carousel-track" id="carousel-track">
+        <div class="carousel-slide">
+          <div class="before-after" style="height:220px;">
+            <div class="before-half"><span class="before-after-label">Antes</span><span style="font-size:36px;">😔</span><span style="font-size:12px; font-weight:600; opacity:0.7;">Antes do programa</span></div>
+            <div class="after-half"><span class="before-after-label">Depois</span><span style="font-size:36px;">😍</span><span style="font-size:12px; font-weight:600; opacity:0.7;">5 meses depois</span></div>
+          </div>
+          <div class="carousel-badge">-24kg &nbsp;|&nbsp; 5 meses &nbsp;|&nbsp; 64 anos</div>
+        </div>
+        <div class="carousel-slide">
+          <div class="before-after" style="height:220px;">
+            <div class="before-half"><span class="before-after-label">Antes</span><span style="font-size:36px;">😔</span><span style="font-size:12px; font-weight:600; opacity:0.7;">Antes do programa</span></div>
+            <div class="after-half"><span class="before-after-label">Depois</span><span style="font-size:36px;">🤩</span><span style="font-size:12px; font-weight:600; opacity:0.7;">3 meses depois</span></div>
+          </div>
+          <div class="carousel-badge">-14kg &nbsp;|&nbsp; 3 meses &nbsp;|&nbsp; 58 anos</div>
+        </div>
+        <div class="carousel-slide">
+          <div class="before-after" style="height:220px;">
+            <div class="before-half"><span class="before-after-label">Antes</span><span style="font-size:36px;">😔</span><span style="font-size:12px; font-weight:600; opacity:0.7;">Antes do programa</span></div>
+            <div class="after-half"><span class="before-after-label">Depois</span><span style="font-size:36px;">💪</span><span style="font-size:12px; font-weight:600; opacity:0.7;">4 meses depois</span></div>
+          </div>
+          <div class="carousel-badge">-18kg &nbsp;|&nbsp; 4 meses &nbsp;|&nbsp; 52 anos</div>
+        </div>
+      </div>
+    </div>
+    <div class="carousel-dots" id="carousel-dots">
+      <div class="dot active" data-slide="0"></div>
+      <div class="dot" data-slide="1"></div>
+      <div class="dot" data-slide="2"></div>
+    </div>
+
+    <p style="font-size:18px; font-weight:800; color:var(--text); text-align:center; margin-bottom:16px;">VOCÊ DESEJA ELIMINAR 1 KG POR SEMANA?</p>
+    <button class="btn-primary btn-large btn-red" id="btn-cta-final">SIM, PRECISO MUITO</button>
+  </section>
+
+</div>
+
+<footer>© 2026 – Criado via inlead.digital | Central de anúncios</footer>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+const state = {
+  step: 1,
+  totalSteps: 26,
+  answers: {},
+  altura: 165,
+  peso: 70,
+  history: [1],
+};
+
+// Phase boundaries: steps 1-13 = phase1, 14-26 = phase2
+const PHASE1_END = 13;
+const PHASE2_START = 14;
+
+// Steps where back button is hidden
+const NO_BACK_STEPS = new Set([1, 12, 14, 24]);
+
+// ═══════════════════════════════════════
+// PROGRESS BAR
+// ═══════════════════════════════════════
+function updateProgressBar(stepN) {
+  const fill1 = document.getElementById('fill1');
+  const fill2 = document.getElementById('fill2');
+
+  if (stepN <= PHASE1_END) {
+    const pct = (stepN / PHASE1_END) * 100;
+    fill1.style.width = pct + '%';
+    fill2.style.width = '0%';
+  } else {
+    fill1.style.width = '100%';
+    const pct = ((stepN - PHASE2_START + 1) / (state.totalSteps - PHASE2_START + 1)) * 100;
+    fill2.style.width = Math.min(100, pct) + '%';
+  }
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+let isAnimating = false;
+
+function goToStep(n, direction) {
+  if (isAnimating || n < 1 || n > state.totalSteps) return;
+  if (direction === undefined) direction = n > state.step ? 'forward' : 'back';
+
+  isAnimating = true;
+
+  const current = document.querySelector('.step.active');
+  const next = document.querySelector(`.step[data-step="${n}"]`);
+  if (!next) { isAnimating = false; return; }
+
+  // Animate out
+  current.classList.add(direction === 'forward' ? 'leaving-left' : 'leaving-right');
+
+  setTimeout(() => {
+    current.classList.remove('active', 'leaving-left', 'leaving-right');
+    // Reset entering classes
+    next.classList.remove('entering-right', 'entering-left');
+    next.classList.add('active', direction === 'forward' ? 'entering-right' : 'entering-left');
+
+    // Force reflow
+    void next.offsetHeight;
+
+    setTimeout(() => {
+      next.classList.remove('entering-right', 'entering-left');
+      isAnimating = false;
+    }, 350);
+
+    state.step = n;
+    updateProgressBar(n);
+    updateBackButton(n);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Trigger loading if needed
+    const loadingAttr = next.getAttribute('data-loading');
+    if (loadingAttr === 'true') {
+      const nextStep = parseInt(next.getAttribute('data-next'));
+      const pctEl = next.querySelector('.loading-percent');
+      const barEl = next.querySelector('.loading-bar-fill');
+      const subEl = next.querySelector('.loading-subtitle');
+      startLoading(n, pctEl, barEl, subEl, nextStep);
+    }
+  }, 300);
+}
+
+function updateBackButton(stepN) {
+  const btn = document.getElementById('btn-back');
+  if (NO_BACK_STEPS.has(stepN)) {
+    btn.classList.add('hidden');
+  } else {
+    btn.classList.remove('hidden');
+  }
+}
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  if (state.history.length > 1) {
+    state.history.pop();
+    const prev = state.history[state.history.length - 1];
+    goToStep(prev, 'back');
+  }
+});
+
+function advance(n) {
+  state.history.push(n);
+  goToStep(n, 'forward');
+}
+
+// ═══════════════════════════════════════
+// LOADING ANIMATION
+// ═══════════════════════════════════════
+const loadingMessages = {
+  12: [
+    'Identificando a causa raiz do problema',
+    'Analisando seu perfil hormonal',
+    'Calculando seu potencial de emagrecimento',
+  ],
+  14: [
+    'Identificando a solução para seu caso',
+    'Montando seu protocolo personalizado',
+    'Quase pronto...',
+  ],
+  24: [
+    'PREPARANDO SEU PROTOCOLO',
+    'Montando seu plano personalizado',
+    'Finalizando seu diagnóstico...',
+  ],
+};
+
+const loadingTestimonials = [
+  { name: 'Lucia Ribeiro', role: 'Atendente em loja', text: '"Desde que comecei estou eliminando uma média de 1kg por semana, totalizando 10,5kg."' },
+  { name: 'Maria Silva', role: 'Professora', text: '"Em apenas 6 semanas eu já perdi 7kg e me sinto completamente diferente. O pilates em casa mudou minha vida!"' },
+  { name: 'Ana Costa', role: 'Dona de casa', text: '"Nunca imaginei que 10 minutos por dia fariam tanta diferença. Já eliminei 12kg e a barriga sumiu!"' },
+];
+
+function startLoading(stepN, pctEl, barEl, subEl, nextStep) {
+  const duration = stepN === 24 ? 3000 : 2500;
+  const interval = 50;
+  const totalTicks = duration / interval;
+  let tick = 0;
+  const msgs = loadingMessages[stepN] || loadingMessages[12];
+  let msgIndex = 0;
+
+  // For step 24, also rotate testimonials
+  let depoInterval = null;
+  let depoIndex = 0;
+  if (stepN === 24) {
+    depoInterval = setInterval(() => {
+      depoIndex = (depoIndex + 1) % loadingTestimonials.length;
+      const d = loadingTestimonials[depoIndex];
+      const nameEl = document.getElementById('depo24-name');
+      const roleEl = document.getElementById('depo24-role');
+      const textEl = document.getElementById('depo24-text');
+      const card   = document.getElementById('depo24');
+      if (nameEl) nameEl.textContent = d.name;
+      if (roleEl) roleEl.textContent = d.role;
+      if (textEl) textEl.textContent = d.text;
+      if (card) { card.style.opacity = '0'; setTimeout(() => { card.style.opacity = '1'; }, 200); }
+    }, 2000);
+  }
+
+  const msgInterval = setInterval(() => {
+    msgIndex = (msgIndex + 1) % msgs.length;
+    if (subEl) subEl.textContent = msgs[msgIndex];
+  }, 700);
+
+  const timer = setInterval(() => {
+    tick++;
+    const pct = Math.min(100, Math.round((tick / totalTicks) * 100));
+    if (pctEl) pctEl.textContent = pct + '%';
+    if (barEl) barEl.style.width = pct + '%';
+
+    if (pct >= 100) {
+      clearInterval(timer);
+      clearInterval(msgInterval);
+      if (depoInterval) clearInterval(depoInterval);
+      setTimeout(() => advance(nextStep), 400);
+    }
+  }, interval);
+}
+
+// ═══════════════════════════════════════
+// OPTION CARDS — SINGLE SELECT
+// ═══════════════════════════════════════
+function setupSingleSelect() {
+  document.querySelectorAll('.option-card.single, .option-card.age-option, .silhouette-card').forEach(card => {
+    card.addEventListener('click', function(e) {
+      addRipple(this, e);
+      const parent = this.closest('.options-list, .options-grid-2, .options-grid-3');
+      if (parent) {
+        parent.querySelectorAll('.option-card, .silhouette-card').forEach(c => c.classList.remove('selected'));
+      }
+      this.classList.add('selected');
+
+      const stepEl = this.closest('.step');
+      const stepN = parseInt(stepEl.getAttribute('data-step'));
+      state.answers[stepN] = this.getAttribute('data-value');
+
+      const nextMap = {
+        1: 2, 2: 3, 3: 4, 4: 5, 5: 6,
+        9: 10, 10: 11, 17: 18, 18: 19,
+        21: 22, 22: 23, 23: 24,
+      };
+
+      if (nextMap[stepN] !== undefined) {
+        setTimeout(() => advance(nextMap[stepN]), 300);
+      }
+    });
+  });
+}
+
+// ═══════════════════════════════════════
+// OPTION CARDS — MULTI SELECT
+// ═══════════════════════════════════════
+function setupMultiSelect() {
+  document.querySelectorAll('.option-card.multi').forEach(card => {
+    card.addEventListener('click', function(e) {
+      addRipple(this, e);
+      this.classList.toggle('selected');
+    });
+  });
+}
+
+// ═══════════════════════════════════════
+// CONTINUE BUTTONS (multi-choice steps)
+// ═══════════════════════════════════════
+function setupContinueButtons() {
+  document.querySelectorAll('.btn-primary[data-next]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const nextStep = parseInt(this.getAttribute('data-next'));
+      advance(nextStep);
+    });
+  });
+}
+
+// ═══════════════════════════════════════
+// RIPPLE EFFECT
+// ═══════════════════════════════════════
+function addRipple(el, e) {
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  const x = e.clientX - rect.left - size / 2;
+  const y = e.clientY - rect.top - size / 2;
+  const ripple = document.createElement('span');
+  ripple.classList.add('ripple');
+  ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px;`;
+  el.appendChild(ripple);
+  ripple.addEventListener('animationend', () => ripple.remove());
+}
+
+// ═══════════════════════════════════════
+// SLIDERS
+// ═══════════════════════════════════════
+function setupSliders() {
+  // ALTURA
+  const alturaSlider = document.getElementById('slider-altura');
+  const alturaDisplay = document.getElementById('altura-display');
+  const unitCm = document.getElementById('unit-cm');
+  const unitPol = document.getElementById('unit-pol');
+  let alturaUnit = 'cm';
+
+  function updateAlturaDisplay() {
+    const val = alturaSlider.value;
+    state.altura = parseInt(val);
+    alturaDisplay.innerHTML = val + '<span class="slider-unit">' + alturaUnit + '</span>';
+  }
+  alturaSlider.addEventListener('input', updateAlturaDisplay);
+  updateAlturaDisplay();
+
+  unitCm.addEventListener('click', () => {
+    alturaUnit = 'cm';
+    unitCm.classList.add('active');
+    unitPol.classList.remove('active');
+    updateAlturaDisplay();
+  });
+  unitPol.addEventListener('click', () => {
+    alturaUnit = 'pol';
+    unitPol.classList.add('active');
+    unitCm.classList.remove('active');
+    alturaDisplay.innerHTML = alturaSlider.value + '<span class="slider-unit">pol</span>';
+  });
+
+  // PESO
+  const pesoSlider = document.getElementById('slider-peso');
+  const pesoDisplay = document.getElementById('peso-display');
+  const unitKg = document.getElementById('unit-kg');
+  const unitLb = document.getElementById('unit-lb');
+  let pesoUnit = 'kg';
+
+  function updatePesoDisplay() {
+    const val = pesoSlider.value;
+    state.peso = parseInt(val);
+    pesoDisplay.innerHTML = val + '<span class="slider-unit">' + pesoUnit + '</span>';
+  }
+  pesoSlider.addEventListener('input', updatePesoDisplay);
+  updatePesoDisplay();
+
+  unitKg.addEventListener('click', () => {
+    pesoUnit = 'kg';
+    unitKg.classList.add('active');
+    unitLb.classList.remove('active');
+    updatePesoDisplay();
+  });
+  unitLb.addEventListener('click', () => {
+    pesoUnit = 'lb';
+    unitLb.classList.add('active');
+    unitKg.classList.remove('active');
+    pesoDisplay.innerHTML = pesoSlider.value + '<span class="slider-unit">lb</span>';
+  });
+}
+
+// ═══════════════════════════════════════
+// VIDEO PLACEHOLDER
+// ═══════════════════════════════════════
+function setupVideo() {
+  const vp = document.getElementById('video-placeholder');
+  if (vp) {
+    vp.addEventListener('click', () => advance(26));
+  }
+}
+
+// ═══════════════════════════════════════
+// CAROUSEL
+// ═══════════════════════════════════════
+function setupCarousel() {
+  const track = document.getElementById('carousel-track');
+  const dots = document.querySelectorAll('.carousel-dots .dot');
+  let current = 0;
+  const total = dots.length;
+
+  function goSlide(n) {
+    current = n;
+    track.style.transform = `translateX(-${n * 100}%)`;
+    dots.forEach((d, i) => d.classList.toggle('active', i === n));
+  }
+
+  dots.forEach(d => {
+    d.addEventListener('click', () => goSlide(parseInt(d.getAttribute('data-slide'))));
+  });
+
+  // Auto-advance carousel
+  let carouselTimer = null;
+  function startCarousel() {
+    carouselTimer = setInterval(() => goSlide((current + 1) % total), 3000);
+  }
+
+  // Observe when step 26 becomes active
+  const observer = new MutationObserver(() => {
+    const step26 = document.querySelector('.step[data-step="26"]');
+    if (step26 && step26.classList.contains('active')) {
+      if (!carouselTimer) startCarousel();
+    } else {
+      if (carouselTimer) { clearInterval(carouselTimer); carouselTimer = null; }
+    }
+  });
+  const step26 = document.querySelector('.step[data-step="26"]');
+  if (step26) observer.observe(step26, { attributes: true, attributeFilter: ['class'] });
+}
+
+// ═══════════════════════════════════════
+// CTA FINAL
+// ═══════════════════════════════════════
+function setupCTAFinal() {
+  const btn = document.getElementById('btn-cta-final');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      window.location.href = '#oferta';
+      btn.textContent = '✅ Redirecionando para o programa...';
+      btn.style.background = 'var(--accent-green)';
+    });
+  }
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Show step 1
+  const step1 = document.querySelector('.step[data-step="1"]');
+  step1.classList.add('active');
+  updateProgressBar(1);
+  updateBackButton(1);
+
+  setupSingleSelect();
+  setupMultiSelect();
+  setupContinueButtons();
+  setupSliders();
+  setupVideo();
+  setupCarousel();
+  setupCTAFinal();
+});
+</script>
+</body>
+</html>
