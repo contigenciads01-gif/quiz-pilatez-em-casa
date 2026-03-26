@@ -1,4 +1,4 @@
-﻿// ═══════════════════════════════════════
+// ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
 const state = {
@@ -361,15 +361,60 @@ function setupCarousel() {
 // CTA FINAL
 // ═══════════════════════════════════════
 function setupCTAFinal() {
-  const btn = document.getElementById('btn-cta-final');
-  if (btn) {
+  document.querySelectorAll('[id^="btn-cta-final"], .step[data-step="26"] .btn-primary').forEach(btn => {
     btn.addEventListener('click', () => {
-      window.location.href = '#oferta';
-      btn.textContent = '✅ Redirecionando para o programa...';
-      btn.style.background = 'var(--accent-green)';
+      window.location.href = 'https://pay.hotmart.com/seu-link'; // substitua pelo link real
     });
-  }
+  });
 }
+
+// ═══════════════════════════════════════
+// CAROUSEL (step 26 – alunas)
+// ═══════════════════════════════════════
+function setupCarousel26() {
+  const track = document.getElementById('carousel-track26');
+  if (!track) return;
+  const dots = document.querySelectorAll('#carousel-dots26 .dot');
+  let current = 0;
+  const total = dots.length;
+
+  function goSlide(n) {
+    current = n;
+    track.style.transform = `translateX(-${n * 100}%)`;
+    dots.forEach((d, i) => d.classList.toggle('active', i === n));
+  }
+
+  dots.forEach(d => {
+    d.addEventListener('click', () => goSlide(parseInt(d.getAttribute('data-slide26'))));
+  });
+
+  // Auto-advance
+  const observer = new MutationObserver(() => {
+    const step26 = document.querySelector('.step[data-step="26"]');
+    if (step26 && step26.classList.contains('active')) {
+      setInterval(() => goSlide((current + 1) % total), 3500);
+    }
+  });
+  const step26 = document.querySelector('.step[data-step="26"]');
+  if (step26) observer.observe(step26, { attributes: true, attributeFilter: ['class'] });
+}
+
+// ═══════════════════════════════════════
+// FAQ ACCORDION
+// ═══════════════════════════════════════
+window.toggleFaq = function(btn) {
+  const answer = btn.nextElementSibling;
+  const isOpen = btn.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.faq-q.open').forEach(b => {
+    b.classList.remove('open');
+    b.nextElementSibling.classList.remove('open');
+  });
+  if (!isOpen) {
+    btn.classList.add('open');
+    answer.classList.add('open');
+  }
+};
 
 // ═══════════════════════════════════════
 // INIT
@@ -387,5 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSliders();
   setupVideo();
   setupCarousel();
+  setupCarousel26();
   setupCTAFinal();
 });
